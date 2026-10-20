@@ -16,12 +16,12 @@ def processar_imagem(frame):
     # Converter a imagem de BGR para HSV.
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    # Intervalo inicial para detectar a cor azul.
+    # Intervalo inicial
     azul_inferior = np.array([90, 80, 50])
     azul_superior = np.array([135, 255, 255])
 
-    # Criar uma máscara: branco = azul detectado.
-    mascara = cv2.inRange(
+    # Criar uma máscara.
+    mascara = cv2.inRange( #Ou threshold assim dito
         hsv,
         azul_inferior,
         azul_superior
@@ -30,12 +30,14 @@ def processar_imagem(frame):
     # Reduzir pequenos ruídos na máscara.
     kernel = np.ones((5, 5), np.uint8)
 
+    # Ruido fora do obj
     mascara = cv2.morphologyEx(
         mascara,
         cv2.MORPH_OPEN,
         kernel
     )
 
+    # Ruido dentro do obj
     mascara = cv2.morphologyEx(
         mascara,
         cv2.MORPH_CLOSE,

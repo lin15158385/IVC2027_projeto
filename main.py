@@ -1,3 +1,4 @@
+
 import cv2
 import pygame
 import random
@@ -298,18 +299,18 @@ try:
         )
 
         # Indicacao do metodo de controlo.
-        #    if centro_y is not None:
-        #    estado = "Segmentacao: objecto azul detectado"
-        #    cor_estado = (50, 220, 100)
-        #else:
-        #    estado = "Sem deteccao: usa as setas CIMA/BAIXO"
-        #    cor_estado = (255, 190, 60)
-        #
-        #texto_estado = fonte_pequena.render(
-        #    estado, True, cor_estado
-        #)
+        if centro_y is not None:
+            estado = "Segmentacao: objecto azul detectado"
+            cor_estado = (50, 220, 100)
+        else:
+            estado = "Sem deteccao: usa as setas CIMA/BAIXO"
+            cor_estado = (255, 190, 60)
 
-        #ecra.blit(texto_estado, (15, ALTURA - 25))
+        texto_estado = fonte_pequena.render(
+            estado, True, cor_estado
+        )
+
+        ecra.blit(texto_estado, (15, ALTURA - 25))
 
         pygame.display.flip()
 
