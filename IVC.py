@@ -1,33 +1,49 @@
-
 import cv2
 import numpy as np
 
 
 def processar_imagem(frame):
-    """
-    Segmenta um objecto azul e calcula a sua posição vertical.
 
-    Retorna:
-        centro_y: posição vertical do objecto, ou None
-                  se não for detectado.
-        imagem_resultado: imagem com a visualização da detecção.
-    """
-
-    # Converter a imagem de BGR para HSV.
+    # Converter a imagem de BGR para HSV
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    # Intervalo inicial
-    azul_inferior = np.array([90, 80, 50])
-    azul_superior = np.array([135, 255, 255])
+    # Criar a janela das Trackbars apenas uma vez
+    if not hasattr(processar_imagem, "inicializado"):
+        cv2.namedWindow("Trackbars - Azul")
 
-    # Criar uma máscara.
+        cv2.createTrackbar("H Min", "Trackbars - Azul", 90, 179, lambda x: None)
+        cv2.createTrackbar("H Max", "Trackbars - Azul", 135, 179, lambda x: None)
+
+        cv2.createTrackbar("S Min", "Trackbars - Azul", 80, 255, lambda x: None)
+        cv2.createTrackbar("S Max", "Trackbars - Azul", 255, 255, lambda x: None)
+
+        cv2.createTrackbar("V Min", "Trackbars - Azul", 50, 255, lambda x: None)
+        cv2.createTrackbar("V Max", "Trackbars - Azul", 255, 255, lambda x: None)
+
+        processar_imagem.inicializado = True
+
+    # Ler os valores das Trackbars
+    h_min = cv2.getTrackbarPos("H Min", "Trackbars - Azul")
+    h_max = cv2.getTrackbarPos("H Max", "Trackbars - Azul")
+
+    s_min = cv2.getTrackbarPos("S Min", "Trackbars - Azul")
+    s_max = cv2.getTrackbarPos("S Max", "Trackbars - Azul")
+
+    v_min = cv2.getTrackbarPos("V Min", "Trackbars - Azul")
+    v_max = cv2.getTrackbarPos("V Max", "Trackbars - Azul")
+
+    # Definir os limites da cor azul
+    azul_inferior = np.array([h_min, s_min, v_min])
+    azul_superior = np.array([h_max, s_max, v_max])
+
+    # Criar a máscara de segmentação
     mascara = cv2.inRange( #Ou threshold assim dito
         hsv,
         azul_inferior,
         azul_superior
     )
 
-    # Reduzir pequenos ruídos na máscara.
+    # Reduzir o ruído
     kernel = np.ones((5, 5), np.uint8)
 
     # Ruido fora do obj
@@ -44,7 +60,7 @@ def processar_imagem(frame):
         kernel
     )
 
-    # Encontrar os contornos dos objectos detectados.
+    # Encontrar os contornos externos
     contornos, _ = cv2.findContours(
         mascara,
         cv2.RETR_EXTERNAL,
@@ -52,12 +68,11 @@ def processar_imagem(frame):
     )
 
     centro_y = None
-
-    # Criar uma cópia para visualizar os resultados.
     resultado = frame.copy()
 
     if contornos:
-        # Escolher o maior contorno.
+
+        # Escolher o maior contorno
         maior_contorno = max(
             contornos,
             key=cv2.contourArea
@@ -65,41 +80,51 @@ def processar_imagem(frame):
 
         area = cv2.contourArea(maior_contorno)
 
-        # Ignorar pequenos objectos e ruído.
+        # Ignorar ruído pequeno
         if area > 300:
-            x, y, w, h = cv2.boundingRect(maior_contorno)
 
-            # Centro vertical do objecto.
-            centro_y = y + h // 2
+            # Obter o centro do objeto a partir dos momentos
+            momentos = cv2.moments(maior_contorno)
 
-            # Desenhar o contorno e o centro detectado.
-            cv2.rectangle(
-                resultado,
-                (x, y),
-                (x + w, y + h),
-                (0, 255, 0),
-                2
-            )
+            if momentos["m00"] != 0:
 
-            cv2.circle(
-                resultado,
-                (x + w // 2, centro_y),
-                6,
-                (0, 0, 255),
-                -1
-            )
+                centro_x = int(
+                    momentos["m10"] / momentos["m00"]
+                )
 
-            cv2.putText(
-                resultado,
-                f"Centro Y: {centro_y}",
-                (10, 30),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.7,
-                (0, 255, 0),
-                2
-            )
+                centro_y = int(
+                    momentos["m01"] / momentos["m00"]
+                )
 
-    # Mostrar também a máscara de segmentação.
+                # Desenhar o contorno real do objeto, sem retângulo
+                cv2.drawContours(
+                    resultado,
+                    [maior_contorno],
+                    -1,
+                    (0, 255, 0),
+                    2
+                )
+
+                # Marcar o centro do objeto
+                cv2.circle(
+                    resultado,
+                    (centro_x, centro_y),
+                    6,
+                    (0, 0, 255),
+                    -1
+                )
+
+                cv2.putText(
+                    resultado,
+                    f"Centro Y: {centro_y}",
+                    (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.7,
+                    (0, 255, 0),
+                    2
+                )
+
+    # Mostrar a máscara e o resultado
     cv2.imshow("Mascara - Segmentacao Azul", mascara)
     cv2.imshow("IVC - Deteccao", resultado)
 
